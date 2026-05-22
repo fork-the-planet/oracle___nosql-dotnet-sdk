@@ -70,15 +70,36 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             Assert.AreEqual(2, provider.RefreshCount);
         }
 
+        [TestMethod]
+        public async Task TestInvalidForcedRefreshDoesNotReplaceCachedToken()
+        {
+            var validToken = CreateSecurityToken(Keys.RSA);
+            var invalidToken = CreateSecurityTokenWithNewKey();
+            var provider = new TestSecurityTokenBasedProvider(
+                validToken, invalidToken);
+
+            var profile = await provider.GetProfileAsync(true,
+                CancellationToken.None);
+            Assert.AreEqual(GetKeyIdFromToken(validToken), profile.KeyId);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                provider.GetProfileAsync(true, CancellationToken.None));
+
+            profile = await provider.GetProfileAsync(false,
+                CancellationToken.None);
+            Assert.AreEqual(GetKeyIdFromToken(validToken), profile.KeyId);
+            Assert.AreEqual(2, provider.RefreshCount);
+        }
+
         private class TestSecurityTokenBasedProvider :
             SecurityTokenBasedProvider
         {
-            private readonly string token;
+            private readonly string[] tokens;
 
-            internal TestSecurityTokenBasedProvider(string token) :
+            internal TestSecurityTokenBasedProvider(params string[] tokens) :
                 base(TimeSpan.Zero)
             {
-                this.token = token;
+                this.tokens = tokens;
             }
 
             internal int RefreshCount { get; private set; }
@@ -88,6 +109,8 @@ namespace Oracle.NoSQL.SDK.Tests.IAM
             private protected override Task<string> RefreshSecurityTokenAsync(
                 CancellationToken cancellationToken)
             {
+                var token = tokens[Math.Min(RefreshCount,
+                    tokens.Length - 1)];
                 RefreshCount++;
                 return Task.FromResult(token);
             }
