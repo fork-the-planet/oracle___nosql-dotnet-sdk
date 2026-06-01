@@ -10,15 +10,15 @@ source code and run and modify tests and examples.
 
 Read [README](./README.md) on how to use the SDK.
 
-1.  You may develop on Windows, Linux or Mac.  The SDK supports .NET 10.0 or
-later supported versions. Download your chosen .NET version
-[here](https://dotnet.microsoft.com/en-us/download/dotnet) and follow
+1.  You may develop on Windows, Linux or Mac.  The SDK supports .NET 8.0,
+.NET 9.0, .NET 10.0, or later supported versions. Download your chosen .NET
+version [here](https://dotnet.microsoft.com/en-us/download/dotnet) and follow
 installation instructions for your operating system.
 
 After installation, set *DOTNET_ROOT* environment variable to point to the .NET
 installation location. 
 
-Currently, the SDK is built for .NET 10.0.
+Currently, the SDK is built for .NET 8.0, .NET 9.0, and .NET 10.0.
 
 Note that .NET SDK for Oracle NoSQL Database requires C# version 8.0 or
 higher.
@@ -246,10 +246,12 @@ database. It requires JSON configuration file as described above.  To
 
 ```bash
 cd nosql-dotnet-sdk/Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest
-dotnet run [-c <build-configuration>] -- /path/to/config.json
+dotnet run -f <target-framework> [-c <build-configuration>] -- /path/to/config.json
 ```
 
-where *build-configuration* is *Debug* or *Release*, default is *Debug*.
+where *target-framework* is target framework moniker (TFM), values are
+*net8.0*, *net9.0*, and *net10.0*, and *build-configuration* is *Debug* or
+*Release*, default is *Debug*.
 
 Note: you may omit JSON configuration file if running against the cloud
 service using default OCI configuration file (see
