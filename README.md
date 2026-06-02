@@ -288,10 +288,12 @@ command, providing JSON config file as the command line argument:
 
 ```bash
 cd Oracle.NoSQL.SDK.Samples/<example>
-dotnet run [-- /path/to/config.json]
+dotnet run -f <target-framework> [-- /path/to/config.json]
 ```
 
-where *<example>* is the example directory.
+where *<example>* is the example directory and *<target-framework>* is the
+target framework moniker, supported values are *net8.0*, *net9.0*, and
+*net10.0*.
 
 The command above will build and run the example.
 
@@ -299,7 +301,7 @@ For example:
 
 ```bash
 cd Oracle.NoSQL.SDK.Samples/BasicExample
-dotnet run -- my_config.json
+dotnet run -f net8.0 -- my_config.json
 ```
 
 ## Help
