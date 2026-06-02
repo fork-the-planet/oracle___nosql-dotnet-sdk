@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TFM="${TFM:-net5.0}"
+TFM="${TFM:-net8.0}"
 CONFIG="${1:-${NOSQL_CONFIG_FILE:-}}"
 TEST_PROJECT="$ROOT/Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.Tests/Oracle.NoSQL.SDK.Tests.csproj"
 SMOKE_PROJECT="$ROOT/Oracle.NoSQL.SDK/tests/Oracle.NoSQL.SDK.SmokeTest/Oracle.NoSQL.SDK.SmokeTest.csproj"
