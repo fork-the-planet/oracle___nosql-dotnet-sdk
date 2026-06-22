@@ -41,6 +41,8 @@ namespace Oracle.NoSQL.SDK
 
         internal override bool DoesWrites => true;
 
+        internal override bool CanRetryOnNetworkException => false;
+
         internal string TableName { get; }
 
         internal WriteOperationCollection Operations { get; }

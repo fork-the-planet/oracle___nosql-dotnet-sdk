@@ -122,7 +122,9 @@ namespace Oracle.NoSQL.SDK
         /// </para>
         /// <para>
         /// The delegation token provider delegate is called to obtain the
-        /// delegation token each time the request signature is renewed.
+        /// delegation token when authorizing requests.  If a cached request
+        /// signature is available, the token returned by the delegate must
+        /// match the cached token before the signature is reused.
         /// </para>
         /// </remarks>
         /// <value>
@@ -147,9 +149,10 @@ namespace Oracle.NoSQL.SDK
         /// user.
         /// </para>
         /// <para>
-        /// The delegation token file is read each time the request signature
-        /// is renewed. You may also use the property in JSON configuration
-        /// file (see examples).
+        /// The delegation token file is read when authorizing requests.  If a
+        /// cached request signature is available, the token read from the file
+        /// must match the cached token before the signature is reused. You may
+        /// also use the property in JSON configuration file (see examples).
         /// </para>
         /// </remarks>
         /// <value>
@@ -480,8 +483,8 @@ namespace Oracle.NoSQL.SDK
         /// <remarks>
         /// The delegation token allows the instance to assume the privileges
         /// of the user for which the token was created.  The delegation token
-        /// provider delegate will be used to obtain the delegation token each
-        /// time the request signature is renewed.
+        /// provider delegate will be used to obtain the delegation token when
+        /// authorizing requests.
         /// </remarks>
         /// <param name="delegationTokenProvider">The delegation token
         /// provider delegate.</param>
@@ -511,8 +514,8 @@ namespace Oracle.NoSQL.SDK
         /// <remarks>
         /// The delegation token allows the instance to assume the privileges
         /// of the user for which the token was created.  The delegation token
-        /// file will be read to obtain the delegation token each time the
-        /// request signature is renewed.
+        /// file will be read to obtain the delegation token when authorizing
+        /// requests.
         /// </remarks>
         /// <param name="delegationTokenFile">Path to the delegation token
         /// file.</param>
@@ -699,27 +702,50 @@ namespace Oracle.NoSQL.SDK
             var contentSigned = request.NeedsContentSigned;
             var cacheableSignatureRequest =
                 IsCacheableSignatureRequest(message);
-            
+            var profileValid = profileProvider.IsProfileValid;
+            string currentDelegationToken = null;
+            if (HasDynamicDelegationToken)
+            {
+                currentDelegationToken =
+                    await LoadDelegationToken(cancellationToken);
+            }
+
+            // Use one cache snapshot for the match decision and the headers
+            // applied to this request.
+            var cachedSignatureDetails = CachedSignatureDetails;
+            var needCachedSignatureRefresh =
+                NeedSignatureRefresh(cachedSignatureDetails) ||
+                (HasDynamicDelegationToken &&
+                 !DelegationTokenMatches(cachedSignatureDetails,
+                     currentDelegationToken));
+            var refreshCachedPostSignature =
+                !contentSigned && !cacheableSignatureRequest &&
+                (isInvalidAuth || !profileValid ||
+                 needCachedSignatureRefresh);
+
             SignatureDetails signatureDetails;
             if (isInvalidAuth || contentSigned || !cacheableSignatureRequest ||
-                !profileProvider.IsProfileValid ||
-                NeedSignatureRefresh(CachedSignatureDetails))
+                !profileValid || needCachedSignatureRefresh)
             {
+                if (refreshCachedPostSignature)
+                {
+                    await RefreshCachedSignatureDetailsAsync(isInvalidAuth,
+                        currentDelegationToken, cancellationToken);
+                }
+
                 signatureDetails = await CreateSignatureDetailsAsync(
-                    request, message, isInvalidAuth, cancellationToken);
+                    request, message,
+                    isInvalidAuth && !refreshCachedPostSignature,
+                    currentDelegationToken, cancellationToken);
 
                 if (!contentSigned && cacheableSignatureRequest)
                 {
-                    CachedSignatureDetails = signatureDetails;
-                    if (RefreshAhead != TimeSpan.Zero)
-                    {
-                        ScheduleRenew();
-                    }
+                    CacheSignatureDetails(signatureDetails);
                 }
             }
             else
             {
-                signatureDetails = CachedSignatureDetails;
+                signatureDetails = cachedSignatureDetails;
             }
 
             message.Headers.Add(Authorization,

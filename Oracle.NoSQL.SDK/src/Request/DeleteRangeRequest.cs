@@ -51,6 +51,8 @@ namespace Oracle.NoSQL.SDK
 
         internal override bool DoesWrites => true;
 
+        internal override bool CanRetryOnNetworkException => false;
+
         internal override void Validate()
         {
             base.Validate();

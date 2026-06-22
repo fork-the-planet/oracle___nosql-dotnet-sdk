@@ -145,6 +145,9 @@ namespace Oracle.NoSQL.SDK
             }
         }
 
+        private bool HasDynamicDelegationToken =>
+            DelegationTokenProvider != null || DelegationTokenFile != null;
+
         private async Task<string> LoadDelegationToken(
             CancellationToken cancellationToken)
         {
@@ -263,7 +266,8 @@ namespace Oracle.NoSQL.SDK
 
         private async Task<SignatureDetails> CreateSignatureDetailsAsync(
             Request request, HttpRequestMessage message,
-            bool forceProfileRefresh, CancellationToken cancellationToken)
+            bool forceProfileRefresh, string currentDelegationToken,
+            CancellationToken cancellationToken)
         {
             AuthenticationProfile profile;
 
@@ -281,12 +285,17 @@ namespace Oracle.NoSQL.SDK
                 providerAsyncLock.Release();
             }
 
-            // If there is no DelegationTokenProvider or DelegationTokenFile,
-            // delegationToken could have been initialized in the constructor.
-            var currentDelegationToken =
-                DelegationTokenProvider != null || DelegationTokenFile != null
-                    ? await LoadDelegationToken(cancellationToken)
-                    : DelegationToken;
+            if (!HasDynamicDelegationToken)
+            {
+                // If there is no DelegationTokenProvider or DelegationTokenFile,
+                // delegationToken could have been initialized in the constructor.
+                currentDelegationToken = DelegationToken;
+            }
+            else if (currentDelegationToken == null)
+            {
+                currentDelegationToken =
+                    await LoadDelegationToken(cancellationToken);
+            }
 
             ContentSigningInfo contentSigningInfo = null;
             if (request?.NeedsContentSigned ?? false)
@@ -378,7 +387,7 @@ namespace Oracle.NoSQL.SDK
                         await Task.Delay(renewInterval, cancellationToken);
                         CachedSignatureDetails =
                             await CreateSignatureDetailsAsync(null, null,
-                                needProfileRefresh, cancellationToken);
+                                needProfileRefresh, null, cancellationToken);
                     }
                     catch (Exception)
                     {
@@ -400,10 +409,34 @@ namespace Oracle.NoSQL.SDK
         // Used by tests.
         internal void ClearSignatureCache() => CachedSignatureDetails = null;
 
+        private void CacheSignatureDetails(SignatureDetails signatureDetails)
+        {
+            CachedSignatureDetails = signatureDetails;
+            if (!HasDynamicDelegationToken &&
+                RefreshAhead != TimeSpan.Zero)
+            {
+                ScheduleRenew();
+            }
+        }
+
+        private async Task RefreshCachedSignatureDetailsAsync(
+            bool forceProfileRefresh, string currentDelegationToken,
+            CancellationToken cancellationToken)
+        {
+            CacheSignatureDetails(await CreateSignatureDetailsAsync(null,
+                null, forceProfileRefresh, currentDelegationToken,
+                cancellationToken));
+        }
+
         private bool NeedSignatureRefresh(
             SignatureDetails signatureDetails) =>
             signatureDetails == null || DateTime.UtcNow >
             signatureDetails.Time + CacheDuration;
+
+        private static bool DelegationTokenMatches(
+            SignatureDetails signatureDetails,
+            string currentDelegationToken) =>
+            signatureDetails?.DelegationToken == currentDelegationToken;
 
         /// <summary>
         /// Validates and configures the authorization provider.

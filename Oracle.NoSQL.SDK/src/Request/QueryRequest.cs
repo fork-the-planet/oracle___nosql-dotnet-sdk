@@ -71,6 +71,12 @@ namespace Oracle.NoSQL.SDK
 
         internal override bool DoesWrites =>
             PreparedStatement != null &&
+            PreparedStatement.OperationCode != OperationCodeSelect;
+
+        internal override bool CanRetryOnNetworkException =>
+            // For unprepared query text, the driver cannot prove the
+            // operation is read-only until a prepared statement is returned.
+            PreparedStatement != null &&
             PreparedStatement.OperationCode == OperationCodeSelect;
 
         internal override string InternalTableName =>
@@ -194,6 +200,14 @@ namespace Oracle.NoSQL.SDK
             if (Durability.HasValue)
             {
                 CheckProtocolVersion("Query durability", 4);
+            }
+
+            if (LastWriteMetadata != null &&
+                QueryVersion < QueryRequestBase.QueryV4)
+            {
+                throw new NotSupportedException(
+                    "Query last write metadata is not supported with " +
+                    $"query protocol version {QueryVersion}");
             }
         }
 

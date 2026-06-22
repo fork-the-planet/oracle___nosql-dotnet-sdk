@@ -133,9 +133,10 @@ namespace Oracle.NoSQL.SDK {
     /// that are temporary in nature.  Examples of retryable exceptions are
     /// those which indicate resource consumption violation such as
     /// <see cref="ReadThrottlingException"/>,
-    /// <see cref="WriteThrottlingException"/> and others.  In addition, any
-    /// network or IO errors are always retryable as the usually indicate
-    /// temporary conditions.  Other exceptions such as
+    /// <see cref="WriteThrottlingException"/> and others.  In addition,
+    /// network or IO errors may be retried for operations that are safe to
+    /// replay, as they usually indicate temporary conditions.  Other
+    /// exceptions such as
     /// <see cref="ArgumentException"/>, <see cref="TableNotFoundException"/>,
     /// etc. are not retryable as they indicate a syntactic or semantic errors
     /// that require additional actions to be resolved.

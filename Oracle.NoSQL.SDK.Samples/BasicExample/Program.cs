@@ -46,18 +46,18 @@ namespace Oracle.NoSQL.SDK.Samples
     //
     // Run the example as:
     //
-    // dotnet run -f <target framework> -- <config file>
+    // dotnet run -f <target-framework> -- <config file>
     //
     // where:
-    //   - <target framework> is target framework moniker, supported values
-    //     are netcoreapp3.1 and net5.0
+    //   - <target-framework> is target framework moniker, supported values
+    //     are net8.0, net9.0, and net10.0
     //   - <config file> is the JSON config file created as described above
     // ------------------------------------------------------------------------
 
     public class Program
     {
         private const string Usage =
-            "Usage: dotnet run -f <target framework> [-- <config file>]";
+            "Usage: dotnet run -f <target-framework> [-- <config file>]";
         private const string TableName = "BasicExample";
 
         // <Main>

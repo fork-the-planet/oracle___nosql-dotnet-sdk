@@ -147,14 +147,13 @@ namespace Oracle.NoSQL.SDK.Http
                 message.Headers.Add(Namespace, ns);
             }
 
-            var timeout = Math.Min(request.RequestTimeoutMillis, 2000);
-            var response = await SendWithTimeoutAsync(client, message, timeout,
-                cancellationToken);
+            var response = await SendWithTimeoutAsync(client, message,
+                request.RequestTimeoutMillis, cancellationToken);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 if (IsUnsupportedFeatureProbeResponse(response.StatusCode))
                 {
-                    MarkFeaturesUnavailable();
+                    UpdateCachedResponseInfo(response, true);
                     return;
                 }
 

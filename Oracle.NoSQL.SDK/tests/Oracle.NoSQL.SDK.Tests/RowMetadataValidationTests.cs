@@ -9,8 +9,10 @@ namespace Oracle.NoSQL.SDK.Tests
 {
     using System;
     using System.Net.Http;
+    using System.Reflection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Oracle.NoSQL.SDK.Http;
+    using Oracle.NoSQL.SDK.Query;
 
     [TestClass]
     public class RowMetadataValidationTests
@@ -58,6 +60,13 @@ namespace Oracle.NoSQL.SDK.Tests
             return Client.GetEnabledFeatures(response);
         }
 
+        private static NoSQLClient MakeClient() =>
+            new NoSQLClient(new NoSQLConfig
+            {
+                ServiceType = ServiceType.CloudSim,
+                Endpoint = "localhost:8080"
+            });
+
         [TestMethod]
         public void TestValidRowMetadata()
         {
@@ -96,6 +105,48 @@ namespace Oracle.NoSQL.SDK.Tests
                 "proxy=26.1.0 kv=26.1.0 features=1"));
             Assert.AreEqual(15, GetEnabledFeatures(
                 "proxy=26.1.0 kv=26.1.0 features=f other=value"));
+        }
+
+        [TestMethod]
+        public void TestQueryMetadataRequiresQueryV4()
+        {
+            using var client = MakeClient();
+            Assert.IsTrue(client.ProtocolHandler.DecrementQueryVersion(
+                QueryRequestBase.QueryV4));
+            var request = new QueryRequest<RecordValue>(client,
+                "UPDATE users SET name = 'alice'",
+                new QueryOptions { LastWriteMetadata = "{}" });
+
+            Assert.ThrowsException<NotSupportedException>(() =>
+                request.Validate());
+        }
+
+        [TestMethod]
+        public void TestInternalQueryRequestCopiesLastWriteMetadata()
+        {
+            using var client = MakeClient();
+            var metadata = "{\"source\":\"test\"}";
+            var preparedStatement = new PreparedStatement
+            {
+                DriverQueryPlan = new ReceiveStep()
+            };
+            var runtime = new QueryRuntime(client, preparedStatement)
+            {
+                Request = new QueryRequest<RecordValue>(client,
+                    preparedStatement,
+                    new QueryOptions { LastWriteMetadata = metadata })
+            };
+            var iterator = new ReceiveIterator(runtime, new ReceiveStep());
+            var queryRequestField = typeof(ReceiveIterator).GetField(
+                "queryRequest",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(queryRequestField);
+
+            var queryRequest =
+                (QueryRequest<RecordValue>)queryRequestField.GetValue(
+                    iterator);
+            Assert.AreEqual(metadata,
+                queryRequest.Options.LastWriteMetadata);
         }
     }
 }
