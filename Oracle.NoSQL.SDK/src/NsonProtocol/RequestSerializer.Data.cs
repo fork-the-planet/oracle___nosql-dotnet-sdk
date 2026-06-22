@@ -48,7 +48,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             if (op.MatchVersion != null)
             {
                 writer.WriteByteArray(FieldNames.RowVersion,
-                    op.MatchVersion.Bytes);
+                    op.MatchVersion.InternalBytes);
             }
 
             WriteValue(writer, MapValue.FromObject(op.Row));
@@ -59,7 +59,7 @@ namespace Oracle.NoSQL.SDK.NsonProtocol
             if (op.MatchVersion != null)
             {
                 writer.WriteByteArray(FieldNames.RowVersion,
-                    op.MatchVersion.Bytes);
+                    op.MatchVersion.InternalBytes);
             }
 
             WriteKey(writer, MapValue.FromObject(op.PrimaryKey));
