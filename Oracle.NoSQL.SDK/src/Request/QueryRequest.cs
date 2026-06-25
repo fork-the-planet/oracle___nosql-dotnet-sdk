@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
     using System.Diagnostics;
     using System.IO;
     using Query;
