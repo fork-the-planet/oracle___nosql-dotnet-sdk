@@ -7,6 +7,7 @@
 
 namespace Oracle.NoSQL.SDK
 {
+    using System;
     using System.Diagnostics;
     using System.IO;
     using Query;
@@ -19,7 +20,8 @@ namespace Oracle.NoSQL.SDK
     /// Base class for <see cref="QueryRequest{TRow}"/>.  Only used
     /// internally.
     /// </summary>
-    public abstract class QueryRequest : QueryRequestBase
+    public abstract class QueryRequest : QueryRequestBase,
+        ILastWriteMetadataRequest
     {
         // "5" == PrepareCallback.QueryOperation.SELECT
         internal const int OperationCodeSelect = 5;
@@ -86,6 +88,11 @@ namespace Oracle.NoSQL.SDK
 
         internal override int QueryTopologySequenceNumber =>
             BaseTopology?.SequenceNumber ?? base.QueryTopologySequenceNumber;
+
+        internal string LastWriteMetadata => Options?.LastWriteMetadata;
+
+        bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
+            LastWriteMetadata != null;
     }
 
     /// <summary>
@@ -161,6 +168,11 @@ namespace Oracle.NoSQL.SDK
             internal set => base.Options = value;
         }
 
+        /// <summary>
+        /// Gets the JSON last-write metadata for write queries.
+        /// </summary>
+        public new string LastWriteMetadata => base.LastWriteMetadata;
+
         internal override void Serialize(IRequestSerializer serializer,
             MemoryStream stream)
         {
@@ -189,6 +201,14 @@ namespace Oracle.NoSQL.SDK
             if (Durability.HasValue)
             {
                 CheckProtocolVersion("Query durability", 4);
+            }
+
+            if (LastWriteMetadata != null &&
+                QueryVersion < QueryRequestBase.QueryV4)
+            {
+                throw new NotSupportedException(
+                    "Query last write metadata is not supported with " +
+                    $"query protocol version {QueryVersion}");
             }
         }
 
