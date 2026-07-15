@@ -93,6 +93,42 @@ namespace Oracle.NoSQL.SDK.Tests
         }
 
         [TestMethod]
+        public void TestWriteRequestExposesPutLastWriteMetadata()
+        {
+            using var client = MakeClient();
+            const string metadata = "{\"operation\":\"put\"}";
+            var options = new PutOptions
+            {
+                LastWriteMetadata = metadata
+            };
+            var putRequest = new PutRequest<RecordValue>(client, "users",
+                new MapValue(), options);
+            WriteRequest writeRequest = putRequest;
+
+            Assert.AreEqual(metadata, writeRequest.LastWriteMetadata);
+            Assert.AreEqual(putRequest.LastWriteMetadata,
+                writeRequest.LastWriteMetadata);
+        }
+
+        [TestMethod]
+        public void TestWriteRequestExposesDeleteLastWriteMetadata()
+        {
+            using var client = MakeClient();
+            const string metadata = "{\"operation\":\"delete\"}";
+            var options = new DeleteOptions
+            {
+                LastWriteMetadata = metadata
+            };
+            var deleteRequest = new DeleteRequest<RecordValue>(client,
+                "users", new MapValue(), options);
+            WriteRequest writeRequest = deleteRequest;
+
+            Assert.AreEqual(metadata, writeRequest.LastWriteMetadata);
+            Assert.AreEqual(deleteRequest.LastWriteMetadata,
+                writeRequest.LastWriteMetadata);
+        }
+
+        [TestMethod]
         public void TestEnabledFeaturesParsing()
         {
             Assert.IsNull(GetEnabledFeatures(null));
