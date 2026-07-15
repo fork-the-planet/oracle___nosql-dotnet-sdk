@@ -104,6 +104,14 @@ namespace Oracle.NoSQL.SDK
 
         internal Durability? Durability => WriteOptions?.Durability;
 
+        /// <summary>
+        /// Gets the JSON last-write metadata for the write operation.
+        /// </summary>
+        /// <value>
+        /// The JSON metadata, or <c>null</c> if metadata was not provided.
+        /// </value>
+        public string LastWriteMetadata => WriteOptions?.LastWriteMetadata;
+
         internal override bool SupportsRateLimiting => true;
 
         internal override bool DoesWrites => true;

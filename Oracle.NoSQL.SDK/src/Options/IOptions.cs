@@ -34,6 +34,8 @@ namespace Oracle.NoSQL.SDK
     {
         Durability? Durability { get; }
 
+        string LastWriteMetadata { get; }
+
         bool ReturnExisting { get; }
     }
 

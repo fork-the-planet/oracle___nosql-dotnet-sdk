@@ -96,7 +96,7 @@ namespace Oracle.NoSQL.SDK
         /// <summary>
         /// Gets the JSON last-write metadata for the Delete operation.
         /// </summary>
-        public string LastWriteMetadata => Options?.LastWriteMetadata;
+        public new string LastWriteMetadata => base.LastWriteMetadata;
 
         bool ILastWriteMetadataRequest.HasLastWriteMetadata =>
             LastWriteMetadata != null;
